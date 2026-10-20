@@ -85,7 +85,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-
+# Database
+# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+DATABASES = {
+    "default": env.db(
+        "DATABASE_URL",
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+    )
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
