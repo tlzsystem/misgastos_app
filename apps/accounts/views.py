@@ -42,6 +42,11 @@ class UserRegisterView(CreateView):
             return redirect("finances:dashboard")
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
     def form_valid(self, form):
         response = super().form_valid(form)
         if form.cleaned_data.get("create_default_categories"):

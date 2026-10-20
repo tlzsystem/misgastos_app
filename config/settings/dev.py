@@ -17,3 +17,9 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # Disable caching of static files during development
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
+
+# In local development, fallback to Google's official test keys if none are set in .env
+if not RECAPTCHA_SITE_KEY:  # noqa: F405
+    RECAPTCHA_SITE_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+if not RECAPTCHA_SECRET_KEY:  # noqa: F405
+    RECAPTCHA_SECRET_KEY = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"

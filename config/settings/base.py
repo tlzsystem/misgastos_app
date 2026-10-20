@@ -140,6 +140,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Custom application settings
 CURRENCY_SYMBOL = os.environ.get("CURRENCY_SYMBOL", "$") or "$"
 
+# Google reCAPTCHA v2 configuration
+RECAPTCHA_ENABLED = env.bool("RECAPTCHA_ENABLED", default=True)
+RECAPTCHA_SITE_KEY = os.environ.get("RECAPTCHA_SITE_KEY", "").strip()
+RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "").strip()
+
 # Message tags mapped for modern UI alerts
 MESSAGE_TAGS = {
     messages.DEBUG: "debug",

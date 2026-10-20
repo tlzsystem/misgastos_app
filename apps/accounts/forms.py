@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
+from .recaptcha import get_client_ip, is_recaptcha_enabled, verify_recaptcha_token
+
 User = get_user_model()
 
 INPUT_CLASSES = (
@@ -11,7 +13,32 @@ INPUT_CLASSES = (
 )
 
 
-class CustomAuthenticationForm(AuthenticationForm):
+class ReCaptchaValidationMixin:
+    """Mixin to validate Google reCAPTCHA v2 token on form submission."""
+
+    recaptcha_error_messages = {
+        "required": "Por favor, marca la casilla «No soy un robot» para continuar.",
+        "invalid": "La verificación de Google reCAPTCHA falló o expiró. Inténtalo nuevamente.",
+    }
+
+    def validate_recaptcha(self):
+        if not is_recaptcha_enabled():
+            return
+        token = self.data.get("g-recaptcha-response", "").strip()
+        if not token:
+            raise forms.ValidationError(
+                self.recaptcha_error_messages["required"],
+                code="recaptcha_required",
+            )
+        remote_ip = get_client_ip(getattr(self, "request", None))
+        if not verify_recaptcha_token(token, remote_ip=remote_ip):
+            raise forms.ValidationError(
+                self.recaptcha_error_messages["invalid"],
+                code="recaptcha_invalid",
+            )
+
+
+class CustomAuthenticationForm(ReCaptchaValidationMixin, AuthenticationForm):
     username = forms.CharField(
         label="Nombre de usuario",
         widget=forms.TextInput(
@@ -35,8 +62,12 @@ class CustomAuthenticationForm(AuthenticationForm):
         ),
     )
 
+    def clean(self):
+        self.validate_recaptcha()
+        return super().clean()
 
-class CustomUserCreationForm(UserCreationForm):
+
+class CustomUserCreationForm(ReCaptchaValidationMixin, UserCreationForm):
     first_name = forms.CharField(
         label="Nombre",
         max_length=150,
@@ -92,7 +123,8 @@ class CustomUserCreationForm(UserCreationForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, request=None, **kwargs):
+        self.request = request
         super().__init__(*args, **kwargs)
         self.fields["password1"].widget.attrs.update(
             {"class": INPUT_CLASSES, "placeholder": "Mínimo 8 caracteres"}
@@ -106,6 +138,11 @@ class CustomUserCreationForm(UserCreationForm):
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("Ya existe una cuenta registrada con este correo electrónico.")
         return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        self.validate_recaptcha()
+        return cleaned_data
 
 
 class UserProfileForm(forms.ModelForm):
