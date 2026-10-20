@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — MisGastos{% endblock %}
+{% block header_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden">
+    <!-- Live Preview Header -->
+    <div class="p-6 bg-slate-50 border-b border-slate-200/70 flex items-center justify-between">
+      <div>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">Vista previa de tu categoría</span>
+        <div class="flex items-center gap-3 mt-2">
+          <div id="preview-badge-icon" class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm" style="background-color: #6366f1">
+            <i data-lucide="tag" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p id="preview-name" class="text-sm font-bold text-slate-900">Nombre de Categoría</p>
+            <p id="preview-type" class="text-xs text-slate-500">Gasto</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" class="p-6 sm:p-8 space-y-5" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="rounded-xl bg-rose-50 border border-rose-200 p-4 text-xs font-medium text-rose-700">
+        {% for err in form.non_field_errors %}
+          <p>{{ err }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label for="{{ form.name.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            {{ form.name.label }} *
+          </label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.name.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="{{ form.category_type.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            {{ form.category_type.label }} *
+          </label>
+          {{ form.category_type }}
+          {% if form.category_type.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.category_type.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label for="{{ form.color.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            {{ form.color.label }} *
+          </label>
+          {{ form.color }}
+          {% if form.color.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.color.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="{{ form.icon.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            {{ form.icon.label }} *
+          </label>
+          {{ form.icon }}
+          {% if form.icon.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.icon.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div>
+        <label for="{{ form.monthly_budget.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+          {{ form.monthly_budget.label }} ({{ CURRENCY_SYMBOL }})
+        </label>
+        {{ form.monthly_budget }}
+        <p class="mt-1 text-[11px] text-slate-400">{{ form.monthly_budget.help_text }}</p>
+        {% if form.monthly_budget.errors %}
+          <p class="mt-1 text-xs text-rose-600">{{ form.monthly_budget.errors|striptags }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.description.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+          {{ form.description.label }}
+        </label>
+        {{ form.description }}
+        {% if form.description.errors %}
+          <p class="mt-1 text-xs text-rose-600">{{ form.description.errors|striptags }}</p>
+        {% endif %}
+      </div>
+
+      <div class="pt-2">
+        <label class="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200/80 cursor-pointer">
+          <div class="pt-0.5">
+            {{ form.is_active }}
+          </div>
+          <div class="text-xs text-slate-700">
+            <span class="font-bold text-slate-900 block">Categoría Activa</span>
+            {{ form.is_active.help_text }}
+          </div>
+        </label>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+        <a href="{% url 'finances:category_list' %}"
+           class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+          Cancelar
+        </a>
+        <button type="submit"
+                class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-500 transition">
+          <i data-lucide="save" class="w-4 h-4"></i>
+          <span>{% if is_edit %}Guardar Cambios{% else %}Crear Categoría{% endif %}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    const typeSelect = document.getElementById('{{ form.category_type.id_for_label }}');
+    const colorSelect = document.getElementById('{{ form.color.id_for_label }}');
+    const iconSelect = document.getElementById('{{ form.icon.id_for_label }}');
+
+    const previewBadge = document.getElementById('preview-badge-icon');
+    const previewName = document.getElementById('preview-name');
+    const previewType = document.getElementById('preview-type');
+
+    function updatePreview() {
+      if (nameInput) {
+        previewName.textContent = nameInput.value.trim() || 'Nombre de Categoría';
+      }
+      if (typeSelect) {
+        previewType.textContent = typeSelect.value === 'INCOME' ? 'Categoría de Ingreso' : 'Categoría de Gasto';
+      }
+      if (colorSelect && previewBadge) {
+        previewBadge.style.backgroundColor = colorSelect.value || '#6366f1';
+      }
+      if (iconSelect && previewBadge) {
+        const iconName = iconSelect.value || 'tag';
+        previewBadge.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
+        lucide.createIcons();
+      }
+    }
+
+    [nameInput, typeSelect, colorSelect, iconSelect].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updatePreview);
+        el.addEventListener('change', updatePreview);
+      }
+    });
+
+    updatePreview();
+  });
+</script>
+{% endblock %}

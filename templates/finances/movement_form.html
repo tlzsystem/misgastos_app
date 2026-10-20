@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — MisGastos{% endblock %}
+{% block header_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  {% if not has_active_categories %}
+  <div class="mb-6 rounded-2xl bg-amber-50 border border-amber-200 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-start gap-3">
+      <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+      <div>
+        <h3 class="text-sm font-bold text-amber-900">Necesitas al menos una categoría activa</h3>
+        <p class="text-xs text-amber-700 mt-0.5">
+          Todos los movimientos deben estar asociados a una categoría activa de tu cuenta.
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <form method="post" action="{% url 'finances:category_seed_defaults' %}">
+        {% csrf_token %}
+        <button type="submit" class="rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-amber-500 transition">
+          Cargar Sugeridas
+        </button>
+      </form>
+      <a href="{% url 'finances:category_create' %}" class="rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 transition">
+        Crear Categoría
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden">
+    <!-- Type Selector Tabs (Gasto vs Ingreso) -->
+    <div class="p-4 bg-slate-50 border-b border-slate-200/70">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2 text-center">Selecciona el tipo de movimiento</p>
+      <div class="grid grid-cols-2 gap-3 max-w-md mx-auto">
+        <button type="button" id="tab-expense" onclick="setMovementTypeFilter('EXPENSE')"
+                class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold border transition">
+          <i data-lucide="trending-down" class="w-4 h-4"></i>
+          <span>Gasto / Egreso</span>
+        </button>
+        <button type="button" id="tab-income" onclick="setMovementTypeFilter('INCOME')"
+                class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold border transition">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span>Ingreso / Abono</span>
+        </button>
+      </div>
+    </div>
+
+    <form method="post" class="p-6 sm:p-8 space-y-5" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="rounded-xl bg-rose-50 border border-rose-200 p-4 text-xs font-medium text-rose-700">
+        {% for err in form.non_field_errors %}
+          <p>{{ err }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <!-- Monto -->
+        <div>
+          <label for="{{ form.amount.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            Monto ({{ CURRENCY_SYMBOL }}) *
+          </label>
+          {{ form.amount }}
+          {% if form.amount.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.amount.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Fecha -->
+        <div>
+          <label for="{{ form.date.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            {{ form.date.label }} *
+          </label>
+          {{ form.date }}
+          {% if form.date.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.date.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Categoría asociada -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label for="{{ form.category.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+            {{ form.category.label }} *
+          </label>
+          <a href="{% url 'finances:category_create' %}" class="text-xs font-semibold text-indigo-600 hover:underline">
+            + Nueva categoría
+          </a>
+        </div>
+        {{ form.category }}
+        <p id="category-helper" class="mt-1 text-[11px] text-slate-400">
+          Mostrando tus categorías activas según el tipo seleccionado arriba.
+        </p>
+        {% if form.category.errors %}
+          <p class="mt-1 text-xs text-rose-600">{{ form.category.errors|striptags }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Concepto / Descripción -->
+      <div>
+        <label for="{{ form.description.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+          {{ form.description.label }} *
+        </label>
+        {{ form.description }}
+        {% if form.description.errors %}
+          <p class="mt-1 text-xs text-rose-600">{{ form.description.errors|striptags }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Medio de pago -->
+      <div>
+        <label for="{{ form.payment_method.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+          {{ form.payment_method.label }} *
+        </label>
+        {{ form.payment_method }}
+        {% if form.payment_method.errors %}
+          <p class="mt-1 text-xs text-rose-600">{{ form.payment_method.errors|striptags }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Notas adicionales -->
+      <div>
+        <label for="{{ form.notes.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+          {{ form.notes.label }}
+        </label>
+        {{ form.notes }}
+        {% if form.notes.errors %}
+          <p class="mt-1 text-xs text-rose-600">{{ form.notes.errors|striptags }}</p>
+        {% endif %}
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+        <a href="{% url 'finances:movement_list' %}"
+           class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+          Cancelar
+        </a>
+        <button type="submit"
+                class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-500 transition">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>{% if is_edit %}Guardar Cambios{% else %}Registrar Movimiento{% endif %}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{ categories_meta|json_script:"categories-meta-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const categoriesMeta = JSON.parse(document.getElementById('categories-meta-data').textContent);
+  const categorySelect = document.getElementById('id_category');
+  const tabExpense = document.getElementById('tab-expense');
+  const tabIncome = document.getElementById('tab-income');
+  let currentSelectedId = categorySelect ? categorySelect.value : '';
+
+  // Determine initial tab type based on selected category or URL parameter
+  let initialType = '{{ initial_type }}';
+  if (currentSelectedId) {
+    const found = categoriesMeta.find(c => String(c.id) === String(currentSelectedId));
+    if (found) {
+      initialType = found.type;
+    }
+  }
+
+  function setMovementTypeFilter(type) {
+    if (!categorySelect) return;
+    const prevValue = categorySelect.value;
+
+    // Style tabs
+    if (type === 'EXPENSE') {
+      tabExpense.className = 'flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold border bg-rose-600 text-white border-rose-600 shadow-sm transition';
+      tabIncome.className = 'flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold border bg-white text-slate-600 border-slate-200 hover:bg-slate-100 transition';
+    } else {
+      tabIncome.className = 'flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold border bg-emerald-600 text-white border-emerald-600 shadow-sm transition';
+      tabExpense.className = 'flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold border bg-white text-slate-600 border-slate-200 hover:bg-slate-100 transition';
+    }
+
+    // Rebuild options matching the chosen type
+    const filtered = categoriesMeta.filter(c => c.type === type);
+    categorySelect.innerHTML = '';
+
+    const placeholderOpt = document.createElement('option');
+    placeholderOpt.value = '';
+    placeholderOpt.textContent = filtered.length > 0
+      ? `Selecciona una categoría de ${type === 'EXPENSE' ? 'Gasto' : 'Ingreso'}...`
+      : `No tienes categorías activas de ${type === 'EXPENSE' ? 'Gasto' : 'Ingreso'}`;
+    categorySelect.appendChild(placeholderOpt);
+
+    filtered.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat.id;
+      opt.textContent = cat.name;
+      if (String(cat.id) === String(prevValue)) {
+        opt.selected = true;
+      }
+      categorySelect.appendChild(opt);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setMovementTypeFilter(initialType || 'EXPENSE');
+  });
+</script>
+{% endblock %}

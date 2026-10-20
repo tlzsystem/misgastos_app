@@ -1,0 +1,230 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MisGastos — Control de Finanzas Personales{% endblock %}</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+          },
+          boxShadow: {
+            'xs': '0 1px 2px 0 rgba(15, 23, 42, 0.04)',
+            'card': '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.03)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full text-slate-800 selection:bg-indigo-600 selection:text-white">
+
+  {% if user.is_authenticated %}
+  <div class="min-h-screen flex flex-col lg:flex-row bg-slate-50/80">
+    
+    <!-- Sidebar Desktop -->
+    <aside class="w-full lg:w-64 lg:fixed lg:inset-y-0 lg:z-40 flex flex-col bg-slate-900 text-slate-100 border-b lg:border-b-0 lg:border-r border-slate-800">
+      <!-- Brand Header -->
+      <div class="flex items-center justify-between h-16 px-6 border-b border-slate-800/80">
+        <a href="{% url 'finances:dashboard' %}" class="flex items-center gap-3 group">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition">
+            <i data-lucide="wallet" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <span class="text-lg font-extrabold tracking-tight text-white">MisGastos</span>
+            <span class="block text-[10px] font-medium uppercase tracking-widest text-indigo-400 -mt-1">Finanzas Pro</span>
+          </div>
+        </a>
+        <!-- Mobile Menu Button -->
+        <button type="button" id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+          <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <div id="sidebar-nav" class="hidden lg:flex flex-col flex-1 justify-between px-4 py-6 space-y-6">
+        <nav class="space-y-1.5">
+          <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Menú Principal</p>
+
+          {% with url_name=request.resolver_match.url_name %}
+          <a href="{% url 'finances:dashboard' %}"
+             class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition {% if url_name == 'dashboard' %}bg-indigo-600 text-white shadow-md shadow-indigo-600/25{% else %}text-slate-300 hover:bg-slate-800/70 hover:text-white{% endif %}">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Resumen Mensual</span>
+          </a>
+
+          <a href="{% url 'finances:movement_list' %}"
+             class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition {% if 'movement' in url_name %}bg-indigo-600 text-white shadow-md shadow-indigo-600/25{% else %}text-slate-300 hover:bg-slate-800/70 hover:text-white{% endif %}">
+            <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+            <span>Movimientos</span>
+          </a>
+
+          <a href="{% url 'finances:category_list' %}"
+             class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition {% if 'category' in url_name %}bg-indigo-600 text-white shadow-md shadow-indigo-600/25{% else %}text-slate-300 hover:bg-slate-800/70 hover:text-white{% endif %}">
+            <i data-lucide="tags" class="w-4 h-4"></i>
+            <span>Mis Categorías</span>
+          </a>
+
+          <a href="{% url 'accounts:profile' %}"
+             class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition {% if url_name == 'profile' %}bg-indigo-600 text-white shadow-md shadow-indigo-600/25{% else %}text-slate-300 hover:bg-slate-800/70 hover:text-white{% endif %}">
+            <i data-lucide="user-cog" class="w-4 h-4"></i>
+            <span>Mi Perfil</span>
+          </a>
+          {% endwith %}
+
+          <div class="pt-4 mt-4 border-t border-slate-800/80">
+            <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Acciones Rápidas</p>
+            <a href="{% url 'finances:movement_create' %}?type=EXPENSE"
+               class="flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition mb-2">
+              <i data-lucide="minus-circle" class="w-4 h-4 text-rose-400"></i>
+              <span>Registrar Gasto</span>
+            </a>
+            <a href="{% url 'finances:movement_create' %}?type=INCOME"
+               class="flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>
+              <span>Registrar Ingreso</span>
+            </a>
+          </div>
+        </nav>
+
+        <!-- User Footer -->
+        <div class="pt-4 border-t border-slate-800/80">
+          <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-800/60">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-full bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 font-bold text-sm shrink-0">
+                {{ user.first_name|default:user.username|slice:":1"|upper }}
+              </div>
+              <div class="truncate">
+                <p class="text-xs font-semibold text-white truncate">
+                  {{ user.get_full_name|default:user.username }}
+                </p>
+                <p class="text-[11px] text-slate-400 truncate">@{{ user.username }}</p>
+              </div>
+            </div>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button type="submit" title="Cerrar sesión"
+                      class="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700/60 transition">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 lg:pl-64 flex flex-col min-h-screen">
+      <!-- Top Bar -->
+      <header class="sticky top-0 z-30 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between">
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-slate-900">{% block header_title %}Panel de Control{% endblock %}</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="{% url 'finances:movement_create' %}"
+             class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Nuevo Movimiento</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Flash Messages -->
+      {% if messages %}
+      <div class="px-4 sm:px-8 pt-4 space-y-2 max-w-7xl w-full mx-auto">
+        {% for message in messages %}
+        <div class="animate-fade-in flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium border shadow-xs
+          {% if message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800
+          {% elif message.tags == 'error' %}bg-rose-50 border-rose-200 text-rose-800
+          {% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800
+          {% else %}bg-indigo-50 border-indigo-200 text-indigo-800{% endif %}">
+          <div class="flex items-center gap-2.5">
+            {% if message.tags == 'success' %}
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+            {% elif message.tags == 'error' %}
+              <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600 shrink-0"></i>
+            {% elif message.tags == 'warning' %}
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0"></i>
+            {% else %}
+              <i data-lucide="info" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+            {% endif %}
+            <span>{{ message }}</span>
+          </div>
+          <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Page Content -->
+      <main class="flex-1 px-4 sm:px-8 py-6 max-w-7xl w-full mx-auto animate-fade-in">
+        {% block content %}{% endblock %}
+      </main>
+
+      <!-- Footer -->
+      <footer class="py-4 px-8 border-t border-slate-200/70 text-center sm:flex sm:items-center sm:justify-between text-xs text-slate-400">
+        <span>MisGastos &copy; {% now "Y" %} — Plataforma Multi-usuario de Gestión Financiera</span>
+        <span class="hidden sm:inline">Construido con Django &amp; Tailwind CSS</span>
+      </footer>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Unauthenticated Layout (Login / Register) -->
+  <div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 relative overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none"></div>
+
+    {% if messages %}
+    <div class="sm:mx-auto sm:w-full sm:max-w-md px-4 mb-4 space-y-2 z-10">
+      {% for message in messages %}
+      <div class="flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium border bg-white/95 backdrop-blur shadow-lg
+        {% if message.tags == 'error' %}border-rose-300 text-rose-700{% else %}border-indigo-200 text-slate-800{% endif %}">
+        <span>{{ message }}</span>
+        <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="z-10">
+      {% block auth_content %}{% endblock %}
+    </div>
+  </div>
+  {% endif %}
+
+  <script>
+    lucide.createIcons();
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const sidebarNav = document.getElementById('sidebar-nav');
+    if (mobileBtn && sidebarNav) {
+      mobileBtn.addEventListener('click', () => {
+        sidebarNav.classList.toggle('hidden');
+      });
+    }
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

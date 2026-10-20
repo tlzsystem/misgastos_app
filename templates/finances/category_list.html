@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% load finance_extras %}
+
+{% block title %}Mis Categorías — MisGastos{% endblock %}
+{% block header_title %}Gestión de Mis Categorías{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header & Action Bar -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <h2 class="text-lg font-extrabold text-slate-900">Categorías Personalizadas</h2>
+        <span class="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+          {{ active_count }} activa{{ active_count|pluralize:"s" }}
+        </span>
+        {% if inactive_count > 0 %}
+        <span class="inline-flex items-center rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+          {{ inactive_count }} inactiva{{ inactive_count|pluralize:"s" }}
+        </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Crea, edita o desactiva tus propias categorías de gastos e ingresos. Al desactivar una categoría se mantiene intacto todo su historial de movimientos.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+      <form method="post" action="{% url 'finances:category_seed_defaults' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
+          <span>Cargar Sugeridas</span>
+        </button>
+      </form>
+
+      <a href="{% url 'finances:category_create' %}"
+         class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span>Nueva Categoría</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Dual Column Layout: Categorías de Gastos & Categorías de Ingresos -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Expense Categories Column -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden flex flex-col">
+      <div class="px-6 py-4 border-b border-slate-100 bg-rose-50/40 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+            <i data-lucide="trending-down" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Categorías de Gastos</h3>
+            <p class="text-[11px] text-slate-500">{{ expense_categories|length }} categoría{{ expense_categories|length|pluralize:"s" }} configurada{{ expense_categories|length|pluralize:"s" }}</p>
+          </div>
+        </div>
+        <a href="{% url 'finances:category_create' %}?type=EXPENSE"
+           class="inline-flex items-center gap-1 rounded-lg bg-white border border-rose-200 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>Agregar Gasto</span>
+        </a>
+      </div>
+
+      {% if expense_categories %}
+      <div class="divide-y divide-slate-100">
+        {% for cat in expense_categories %}
+        <div class="p-4 sm:px-6 flex items-center justify-between gap-4 transition {% if not cat.is_active %}bg-slate-50/70 opacity-65{% else %}hover:bg-slate-50/60{% endif %}">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs"
+                 style="background-color: {{ cat.color }}">
+              <i data-lucide="{{ cat.icon }}" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-bold text-slate-900 truncate">{{ cat.name }}</p>
+                {% if cat.is_active %}
+                  <span class="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                    Activa
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center rounded-md bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                    Inactiva
+                  </span>
+                {% endif %}
+              </div>
+              {% if cat.description %}
+                <p class="text-xs text-slate-400 truncate">{{ cat.description }}</p>
+              {% endif %}
+              <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                <span><strong>{{ cat.movements_count }}</strong> mov. totales</span>
+                <span>&bull; {{ current_month_name }}: <strong class="text-slate-700">{{ cat.current_month_total|currency }}</strong></span>
+                {% if cat.monthly_budget %}
+                  <span>&bull; Presupuesto: <strong class="text-indigo-600">{{ cat.monthly_budget|currency }}</strong></span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <a href="{% url 'finances:category_update' cat.pk %}"
+               title="Editar categoría"
+               class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-600 transition">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Editar</span>
+            </a>
+
+            <form method="post" action="{% url 'finances:category_toggle_active' cat.pk %}">
+              {% csrf_token %}
+              {% if cat.is_active %}
+                <button type="submit"
+                        title="Desactivar categoría"
+                        class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50/70 px-2.5 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 transition">
+                  <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+                  <span class="hidden sm:inline">Desactivar</span>
+                </button>
+              {% else %}
+                <button type="submit"
+                        title="Activar categoría"
+                        class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span class="hidden sm:inline">Activar</span>
+                </button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="p-10 text-center text-xs text-slate-400">
+        No has creado categorías de gastos todavía.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Income Categories Column -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden flex flex-col">
+      <div class="px-6 py-4 border-b border-slate-100 bg-emerald-50/40 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+            <i data-lucide="trending-up" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Categorías de Ingresos</h3>
+            <p class="text-[11px] text-slate-500">{{ income_categories|length }} categoría{{ income_categories|length|pluralize:"s" }} configurada{{ income_categories|length|pluralize:"s" }}</p>
+          </div>
+        </div>
+        <a href="{% url 'finances:category_create' %}?type=INCOME"
+           class="inline-flex items-center gap-1 rounded-lg bg-white border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>Agregar Ingreso</span>
+        </a>
+      </div>
+
+      {% if income_categories %}
+      <div class="divide-y divide-slate-100">
+        {% for cat in income_categories %}
+        <div class="p-4 sm:px-6 flex items-center justify-between gap-4 transition {% if not cat.is_active %}bg-slate-50/70 opacity-65{% else %}hover:bg-slate-50/60{% endif %}">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs"
+                 style="background-color: {{ cat.color }}">
+              <i data-lucide="{{ cat.icon }}" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-bold text-slate-900 truncate">{{ cat.name }}</p>
+                {% if cat.is_active %}
+                  <span class="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                    Activa
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center rounded-md bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                    Inactiva
+                  </span>
+                {% endif %}
+              </div>
+              {% if cat.description %}
+                <p class="text-xs text-slate-400 truncate">{{ cat.description }}</p>
+              {% endif %}
+              <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                <span><strong>{{ cat.movements_count }}</strong> mov. totales</span>
+                <span>&bull; {{ current_month_name }}: <strong class="text-emerald-600">{{ cat.current_month_total|currency }}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <a href="{% url 'finances:category_update' cat.pk %}"
+               title="Editar categoría"
+               class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-600 transition">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Editar</span>
+            </a>
+
+            <form method="post" action="{% url 'finances:category_toggle_active' cat.pk %}">
+              {% csrf_token %}
+              {% if cat.is_active %}
+                <button type="submit"
+                        title="Desactivar categoría"
+                        class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50/70 px-2.5 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 transition">
+                  <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+                  <span class="hidden sm:inline">Desactivar</span>
+                </button>
+              {% else %}
+                <button type="submit"
+                        title="Activar categoría"
+                        class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span class="hidden sm:inline">Activar</span>
+                </button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="p-10 text-center text-xs text-slate-400">
+        No has creado categorías de ingresos todavía.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load finance_extras %}
+
+{% block title %}Movimientos — MisGastos{% endblock %}
+{% block header_title %}Historial de Movimientos{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Top Actions & Summary Strip -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex items-center justify-between">
+      <div>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ingresos Filtrados</span>
+        <p class="text-xl font-extrabold text-emerald-600 mt-0.5">{{ filtered_income|currency }}</p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+        <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex items-center justify-between">
+      <div>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gastos Filtrados</span>
+        <p class="text-xl font-extrabold text-rose-600 mt-0.5">{{ filtered_expense|currency }}</p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+        <i data-lucide="arrow-down-right" class="w-5 h-5"></i>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex items-center justify-between">
+      <div>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Resultado ({{ filtered_count }} reg.)</span>
+        <p class="text-xl font-extrabold mt-0.5 {% if filtered_balance >= 0 %}text-slate-900{% else %}text-rose-600{% endif %}">
+          {{ filtered_balance|currency }}
+        </p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+        <i data-lucide="calculator" class="w-5 h-5"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card p-5">
+    <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3.5 items-end">
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Mes</label>
+        {{ filter_form.month }}
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Año</label>
+        {{ filter_form.year }}
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Tipo</label>
+        {{ filter_form.movement_type }}
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Categoría</label>
+        {{ filter_form.category }}
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Búsqueda</label>
+        {{ filter_form.q }}
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="submit"
+                class="flex-1 inline-flex justify-center items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition">
+          <i data-lucide="filter" class="w-4 h-4"></i>
+          <span>Filtrar</span>
+        </button>
+        <a href="{% url 'finances:movement_list' %}"
+           title="Limpiar filtros"
+           class="inline-flex items-center justify-center p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Movements Table Card -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h2 class="text-base font-bold text-slate-900">Listado de Movimientos</h2>
+        <p class="text-xs text-slate-500">Cada movimiento está vinculado a una de tus categorías personales</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'finances:movement_create' %}?type=INCOME"
+           class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition">
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+          <span>Ingreso</span>
+        </a>
+        <a href="{% url 'finances:movement_create' %}?type=EXPENSE"
+           class="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition">
+          <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i>
+          <span>Gasto</span>
+        </a>
+      </div>
+    </div>
+
+    {% if movements %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-400 bg-slate-50/60">
+            <th class="py-3.5 px-6">Fecha</th>
+            <th class="py-3.5 px-4">Concepto / Notas</th>
+            <th class="py-3.5 px-4">Categoría</th>
+            <th class="py-3.5 px-4">Tipo</th>
+            <th class="py-3.5 px-4">Medio de Pago</th>
+            <th class="py-3.5 px-6 text-right">Monto</th>
+            <th class="py-3.5 px-6 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm">
+          {% for mov in movements %}
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-4 px-6 whitespace-nowrap text-xs font-semibold text-slate-600">
+              {{ mov.date|date:"d/m/Y" }}
+            </td>
+            <td class="py-4 px-4">
+              <p class="font-bold text-slate-800">{{ mov.description }}</p>
+              {% if mov.notes %}
+                <p class="text-xs text-slate-400 truncate max-w-xs">{{ mov.notes }}</p>
+              {% endif %}
+            </td>
+            <td class="py-4 px-4 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-white"
+                    style="background-color: {{ mov.category.color }}">
+                <i data-lucide="{{ mov.category.icon }}" class="w-3.5 h-3.5"></i>
+                <span>{{ mov.category.name }}</span>
+              </span>
+              {% if not mov.category.is_active %}
+                <span class="ml-1 text-[10px] font-medium text-slate-400">(Inactiva)</span>
+              {% endif %}
+            </td>
+            <td class="py-4 px-4 whitespace-nowrap">
+              {% if mov.is_income %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                  Ingreso
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 border border-rose-200">
+                  Gasto
+                </span>
+              {% endif %}
+            </td>
+            <td class="py-4 px-4 whitespace-nowrap text-xs text-slate-500">
+              {{ mov.get_payment_method_display }}
+            </td>
+            <td class="py-4 px-6 text-right font-extrabold whitespace-nowrap {% if mov.is_income %}text-emerald-600{% else %}text-rose-600{% endif %}">
+              {% if mov.is_income %}+{% else %}-{% endif %}{{ mov.amount|currency }}
+            </td>
+            <td class="py-4 px-6 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1.5">
+                <a href="{% url 'finances:movement_update' mov.pk %}"
+                   class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-600 transition">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                  <span>Editar</span>
+                </a>
+                <a href="{% url 'finances:movement_delete' mov.pk %}"
+                   class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-rose-300 hover:text-rose-600 transition">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  <span>Eliminar</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      <div class="flex items-center gap-2">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}&month={{ request.GET.month }}&year={{ request.GET.year }}&movement_type={{ request.GET.movement_type }}&category={{ request.GET.category }}&q={{ request.GET.q }}"
+             class="rounded-lg border border-slate-200 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50">
+            &larr; Anterior
+          </a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&month={{ request.GET.month }}&year={{ request.GET.year }}&movement_type={{ request.GET.movement_type }}&category={{ request.GET.category }}&q={{ request.GET.q }}"
+             class="rounded-lg border border-slate-200 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50">
+            Siguiente &rarr;
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="p-12 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="search-x" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-sm font-bold text-slate-800">No se encontraron movimientos</h3>
+      <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+        No hay movimientos que coincidan con los filtros seleccionados o aún no has registrado ninguno.
+      </p>
+      <div class="mt-5">
+        <a href="{% url 'finances:movement_create' %}"
+           class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Registrar Primer Movimiento</span>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

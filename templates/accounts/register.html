@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Cuenta — MisGastos{% endblock %}
+
+{% block auth_content %}
+<div class="sm:mx-auto sm:w-full sm:max-w-lg px-4">
+  <div class="flex flex-col items-center text-center mb-6">
+    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-xl shadow-indigo-500/30 mb-3">
+      <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+    </div>
+    <h1 class="text-2xl font-extrabold text-white tracking-tight">Crea tu cuenta en MisGastos</h1>
+    <p class="mt-1 text-sm text-slate-300">Cada usuario cuenta con su propio espacio privado de categorías y movimientos</p>
+  </div>
+
+  <div class="bg-white py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-slate-100">
+    {% if form.non_field_errors %}
+    <div class="mb-5 rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-xs font-medium text-rose-700">
+      {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-4" novalidate>
+      {% csrf_token %}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="{{ form.first_name.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            {{ form.first_name.label }} *
+          </label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.first_name.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="{{ form.last_name.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            {{ form.last_name.label }}
+          </label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.last_name.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="{{ form.username.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            Usuario *
+          </label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.username.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="{{ form.email.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            {{ form.email.label }} *
+          </label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.email.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="{{ form.password1.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            Contraseña *
+          </label>
+          {{ form.password1 }}
+          {% if form.password1.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.password1.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="{{ form.password2.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+            Confirmar Contraseña *
+          </label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}
+            <p class="mt-1 text-xs text-rose-600">{{ form.password2.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <label class="flex items-start gap-3 p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 cursor-pointer">
+          <div class="pt-0.5">
+            {{ form.create_default_categories }}
+          </div>
+          <div class="text-xs text-slate-700 leading-relaxed">
+            <span class="font-semibold text-indigo-950 block">Incluir categorías predeterminadas</span>
+            {{ form.create_default_categories.label }} (Podrás editarlas o desactivarlas cuando quieras).
+          </div>
+        </label>
+      </div>
+
+      <button type="submit"
+              class="w-full flex justify-center items-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-500 transition">
+        <span>Crear mi cuenta</span>
+        <i data-lucide="user-plus" class="w-4 h-4"></i>
+      </button>
+    </form>
+
+    <div class="mt-6 pt-5 border-t border-slate-100 text-center">
+      <p class="text-sm text-slate-600">
+        ¿Ya tienes cuenta?
+        <a href="{% url 'accounts:login' %}" class="font-semibold text-indigo-600 hover:text-indigo-500">
+          Inicia sesión
+        </a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
