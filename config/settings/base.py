@@ -109,6 +109,10 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "finances:dashboard"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
+# Unique cookie names to prevent session/CSRF collisions with other Django apps on the same host
+SESSION_COOKIE_NAME = "misgastos_sessionid"
+CSRF_COOKIE_NAME = "misgastos_csrftoken"
+
 # Internationalization
 LANGUAGE_CODE = env("LANGUAGE_CODE")
 TIME_ZONE = env("TIME_ZONE")

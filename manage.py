@@ -14,11 +14,15 @@ def main():
         base_dir = Path(__file__).resolve().parent
         env_file = base_dir / ".env"
         if env_file.exists():
-            environ.Env.read_env(str(env_file))
+            environ.Env.read_env(str(env_file), overwrite=True)
     except ImportError:
         pass
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
+    if os.environ.get("DJANGO_SETTINGS_MODULE", "").startswith("app."):
+        os.environ["DJANGO_SETTINGS_MODULE"] = os.environ["DJANGO_SETTINGS_MODULE"].replace(
+            "app.", "config.", 1
+        )
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
